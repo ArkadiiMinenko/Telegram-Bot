@@ -1,10 +1,10 @@
-# Змінні оточення
+# ENV
 .env
 .env.docker
 !*.example
 
 
-# База даних
+# Data Base
 data/
 *.db
 *.db-journal
@@ -31,18 +31,13 @@ wheels/
 .installed.cfg
 *.egg
 
-# Віртуальне оточення
-venv/
-env/
-ENV/
-
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
 
-# Логи
+# logs
 *.log
 
 # Docker
