@@ -1,17 +1,30 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text
+from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 
 Base = declarative_base()
 
 class Message(Base):
-    __tablename__ = 'messages'
-
+    """
+    Message model for storing telegram messages
+    
+    Attributes:
+        id (int): Primary key
+        message_id (int): Telegram message ID
+        chat_id (int): Telegram chat ID
+        user_id (int): Telegram user ID
+        original_text (str): Original message text
+        translated_text (str): Translated message text
+        translation_type (str): Type of translation (ua->en or en->ua)
+        created_at (datetime): Message creation timestamp
+    """
+    __tablename__ = "messages"
+    
     id = Column(Integer, primary_key=True)
-    message_id = Column(Integer, nullable=False)
-    chat_id = Column(Integer, nullable=False)
-    user_id = Column(Integer, nullable=False)
-    original_text = Column(Text, nullable=False)
-    translated_text = Column(Text, nullable=False)
-    translation_type = Column(String(10), nullable=False)  # 'UA' або 'EN'
+    message_id = Column(Integer)
+    chat_id = Column(Integer)
+    user_id = Column(Integer)
+    original_text = Column(String)
+    translated_text = Column(String)
+    translation_type = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow) 

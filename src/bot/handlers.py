@@ -58,115 +58,86 @@ async def get_message_by_id(message_id: int, chat_id: int, db: Session) -> Messa
         logger.error(f"❌ Помилка пошуку в БД: {e}")
         return None
 
-async def handle_translation(update: Update, context: ContextTypes.DEFAULT_TYPE, translation_func, translation_type: str):
-    """Загальний обробник для обох типів перекладу"""
+async def handle_translation(update: Update, context: ContextTypes.DEFAULT_TYPE, 
+                           translate_func, translation_type: str):
+    """
+    Generic handler for translation commands
+    
+    Args:
+        update (Update): Telegram update object
+        context (ContextTypes.DEFAULT_TYPE): Telegram context
+        translate_func (callable): Translation function to use
+        translation_type (str): Type of translation being performed
+    """
+    if not update.message:
+        return
+
+    chat_type = update.message.chat.type
+    reply = update.message.reply_to_message
+    
     try:
-        if not update.effective_message:
-            logger.error("No effective message found")
-            return
-
-        # Перевіряємо тип чату
-        chat_type = update.effective_message.chat.type
-        logger.info(f"Processing translation in chat type: {chat_type}")
-
-        if not update.effective_message.reply_to_message:
-            help_text = (
-                "Будь ласка, використовуйте команду як відповідь на повідомлення, яке потрібно перекласти.\n\n"
-                "В приватному чаті:\n"
-                "1. Відправте текст\n"
-                "2. Відповідьте на нього командою\n\n"
-                "В груповому чаті:\n"
-                "1. Відправте текст\n"
-                "2. Відповідьте на нього командою з моїм іменем\n"
-                "Наприклад: /translateua@BotUsername"
-            )
-            await update.effective_message.reply_text(help_text)
-            return
-
-        reply_to_message = update.effective_message.reply_to_message
-        logger.info(f"Reply to message: {reply_to_message.text[:50]}...")
-        
         db = next(get_db())
         
-        # Отримуємо повідомлення з БД
-        original_message = await get_message_by_id(reply_to_message.message_id, reply_to_message.chat_id, db)
+        if reply:
+            # Handle reply to message
+            message = await get_message_by_id(reply.message_id, reply.chat_id, db)
+            if message and message.original_text:
+                translated = translate_func(message.original_text)
+                await update.message.reply_text(translated)
+                return
         
-        if not original_message:
-            # Якщо повідомлення немає в БД, спробуємо зберегти його
-            original_message = await save_message(reply_to_message, db)
-            
-        if not original_message:
-            await update.effective_message.reply_text(
-                "Не вдалося знайти текст для перекладу. Переконайтеся, що відповідаєте на текстове повідомлення."
-            )
+        # Handle direct command with text
+        command_text = update.message.text
+        if ' ' in command_text:
+            text = command_text.split(' ', 1)[1]
+            translated = translate_func(text)
+            await update.message.reply_text(translated)
             return
-
-        # Перекладаємо текст
-        translated_text = translation_func(original_message.original_text)
-        logger.info(f"Translated text: {original_message.original_text} -> {translated_text}")
-        
-        # Оновлюємо запис в БД
-        original_message.translated_text = translated_text
-        original_message.translation_type = translation_type
-        db.commit()
-        
-        # Формуємо відповідь в залежності від типу чату
-        if chat_type == Chat.PRIVATE:
-            reply_text = translated_text
-        else:
-            # В групових чатах додаємо оригінальний текст
-            reply_text = f"Оригінал: {original_message.original_text}\nПереклад: {translated_text}"
-        
-        await update.effective_message.reply_text(reply_text)
-        logger.info(f"Successfully sent translation in {chat_type} chat: {original_message.original_text} -> {translated_text}")
             
+        # No text provided
+        await help_command(update, context)
+        
     except Exception as e:
         logger.error(f"Error in translation handler: {e}")
-        if update.effective_message:
-            await update.effective_message.reply_text("Виникла помилка при перекладі. Спробуйте ще раз.")
+        await update.message.reply_text("Sorry, an error occurred during translation.")
 
 async def translate_ua(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обробник команди /translateUA - перекладає текст з англійської розкладки в українську"""
-    await handle_translation(update, context, transliterate_to_ua, 'UA')
+    """
+    Handle /translateua command
+    Translates text from English layout to Ukrainian
+    """
+    await handle_translation(update, context, transliterate_to_ua, "en->ua")
 
 async def translate_en(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обробник команди /translateEN - перекладає текст з української розкладки в англійську"""
-    await handle_translation(update, context, transliterate_to_en, 'EN')
+    """
+    Handle /translateen command
+    Translates text from Ukrainian layout to English
+    """
+    await handle_translation(update, context, transliterate_to_en, "ua->en")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обробник команди /help - показує список доступних команд"""
-    logger.info("Received help command")
-    chat_type = update.effective_message.chat.type
+    """Show help message with command usage instructions"""
+    chat_type = update.message.chat.type if update.message else "unknown"
     
     if chat_type == Chat.PRIVATE:
         help_text = (
-            "🤖 Привіт! Я бот для транслітерації тексту.\n\n"
-            "Доступні команди:\n"
-            "/translateua - перекласти текст з англійської розкладки в українську\n"
-            "/translateen - перекласти текст з української розкладки в англійську\n"
-            "/help - показати це повідомлення\n\n"
-            "Як використовувати:\n"
-            "1. Відправте текст, який потрібно перекласти\n"
-            "2. Відповідьте на це повідомлення командою /translateua або /translateen\n"
-            "3. Отримайте переклад\n\n"
-            "Приклади:\n"
-            "• ghbdtn -> привіт (використовуйте /translateua)\n"
-            "• привіт -> ghbdtn (використовуйте /translateen)"
+            "To translate text, use one of these methods:\n\n"
+            "1. Send text and reply with command:\n"
+            "   - Reply with /translateua for EN->UA\n"
+            "   - Reply with /translateen for UA->EN\n\n"
+            "2. Send command with text:\n"
+            "   - /translateua your_text\n"
+            "   - /translateen your_text"
         )
     else:
         help_text = (
-            "🤖 Привіт! Я бот для транслітерації тексту.\n\n"
-            "Доступні команди:\n"
-            "/translateua@BotUsername - перекласти текст з англійської розкладки в українську\n"
-            "/translateen@BotUsername - перекласти текст з української розкладки в англійську\n"
-            "/help@BotUsername - показати це повідомлення\n\n"
-            "Як використовувати в груповому чаті:\n"
-            "1. Відправте текст, який потрібно перекласти\n"
-            "2. Відповідьте на це повідомлення командою з моїм іменем\n"
-            "3. Отримайте переклад з оригінальним текстом\n\n"
-            "Приклади:\n"
-            "• ghbdtn -> привіт (використовуйте /translateua@BotUsername)\n"
-            "• привіт -> ghbdtn (використовуйте /translateen@BotUsername)"
+            "To translate text in group chat:\n\n"
+            "1. Reply to message with command:\n"
+            "   - /translateua@BotUsername\n"
+            "   - /translateen@BotUsername\n\n"
+            "2. Send command with text:\n"
+            "   - /translateua@BotUsername text\n"
+            "   - /translateen@BotUsername text"
         )
     
     await update.message.reply_text(help_text)
@@ -184,22 +155,22 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"❌ Помилка в обробнику повідомлень: {e}")
 
 async def setup_commands(application):
-    """Налаштування команд для відображення в меню бота"""
+    """Setup bot commands for display in menu"""
     logger.info("Setting up bot commands")
     commands = [
-        BotCommand("translateua", "Переклад з англійської розкладки"),
-        BotCommand("translateen", "Переклад з української розкладки"),
-        BotCommand("help", "Показати довідку")
+        BotCommand("translateua", "Translate from English layout"),
+        BotCommand("translateen", "Translate from Ukrainian layout"),
+        BotCommand("help", "Show help")
     ]
     await application.bot.set_my_commands(commands)
     logger.info("Bot commands set up successfully")
 
 def setup_handlers(application):
-    """Налаштування обробників команд та повідомлень"""
-    # Додаємо обробник для всіх текстових повідомлень
+    """Setup message and command handlers"""
+    # Add handler for all text messages
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
     
-    # Додаємо обробники команд
+    # Add command handlers
     application.add_handler(CommandHandler("translateua", translate_ua))
     application.add_handler(CommandHandler("translateen", translate_en))
     application.add_handler(CommandHandler("help", help_command))
