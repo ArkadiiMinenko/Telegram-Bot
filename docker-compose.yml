@@ -1,0 +1,29 @@
+version: '3.9'  # Use the latest recommended Compose version
+
+services:
+  bot:
+    build: .  # Build Dockerfile from the current directory
+    container_name: telegram_bot  # Name of the bot container
+    env_file:
+      - .env.docker  # Load environment variables from file
+    volumes:
+      - ./logs:/app/logs  # Mount host logs directory into container
+    depends_on:
+      - db  # Wait for database container before starting bot
+    restart: unless-stopped  # Restart bot container if it crashes
+
+  db:
+    image: postgres:15  # Use official Postgres image
+    container_name: telegram_db
+    environment:
+      POSTGRES_USER: botuser         # Database username
+      POSTGRES_PASSWORD: botpass     # Database password
+      POSTGRES_DB: telegram_bot      # Name of the database
+    ports:
+      - "5432:5432"  # Expose DB port for development/debug
+    volumes:
+      - pgdata:/var/lib/postgresql/data  # Persist DB data
+    restart: always  # Always restart database on failure/reboot
+
+volumes:
+  pgdata:  # Named volume for persistent Postgres data

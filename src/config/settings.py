@@ -1,21 +1,18 @@
 import os
 from dotenv import load_dotenv
-from pathlib import Path
 
-# Load environment variables
-load_dotenv()
+# Determine which .env file to load
+env_docker_path = os.path.join(os.getcwd(), '.env.docker')
+env_default_path = os.path.join(os.getcwd(), '.env')
 
-# Base settings
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+if os.path.exists(env_docker_path):
+    load_dotenv(dotenv_path=env_docker_path)
+else:
+    load_dotenv(dotenv_path=env_default_path)
 
-# Telegram settings
-TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-if not TELEGRAM_BOT_TOKEN:
-    raise ValueError("TELEGRAM_BOT_TOKEN not set in environment variables")
+# Core settings
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///translator_bot.db")
 
-# Database settings
-DATABASE_URL = os.getenv('DATABASE_URL', f'sqlite:///{BASE_DIR}/data/bot.db')
-MAX_DB_SIZE_MB = float(os.getenv('MAX_DB_SIZE_MB', 400))  # Maximum size in MB
-
-# Інші налаштування
-MAX_DB_SIZE_GB = float(os.getenv('MAX_DB_SIZE_GB', 1)) 
+# DB size limits
+MAX_DB_SIZE_MB = int(os.getenv("MAX_DB_SIZE_MB", 400))

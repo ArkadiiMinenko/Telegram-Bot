@@ -1,5 +1,8 @@
 # Змінні оточення
 .env
+.env.docker
+!*.example
+
 
 # База даних
 data/
