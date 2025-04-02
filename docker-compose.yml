@@ -9,7 +9,9 @@ services:
     volumes:
       - ./logs:/app/logs  # Mount host logs directory into container
     depends_on:
-      - db  # Wait for database container before starting bot
+      db:
+        condition: service_healthy  # Wait until DB passes healthcheck
+    command: python -m src.main  # Run bot
     restart: unless-stopped  # Restart bot container if it crashes
 
   db:
@@ -24,6 +26,11 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data  # Persist DB data
     restart: always  # Always restart database on failure/reboot
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botuser -d telegram_bot"]  # Check DB readiness
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
 volumes:
   pgdata:  # Named volume for persistent Postgres data

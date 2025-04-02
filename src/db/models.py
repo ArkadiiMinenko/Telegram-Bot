@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
+from sqlalchemy import BigInteger
+from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
@@ -22,8 +24,8 @@ class Message(Base):
     
     id = Column(Integer, primary_key=True)
     message_id = Column(Integer)
-    chat_id = Column(Integer)
-    user_id = Column(Integer)
+    chat_id = Column(BigInteger)
+    user_id = Column(BigInteger)
     original_text = Column(String)
     translated_text = Column(String)
     translation_type = Column(String)

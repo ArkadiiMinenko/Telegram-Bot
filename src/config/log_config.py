@@ -1,6 +1,8 @@
 import sys
 from loguru import logger
 import os
+from src.config.settings import DATABASE_URL, MAX_DB_SIZE_MB
+
 
 # Створюємо директорію для логів, якщо вона не існує
 os.makedirs("logs", exist_ok=True)
@@ -30,3 +32,5 @@ logger.add(
     format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
     level="DEBUG"
 ) 
+
+logger.info(f"Connecting to DB: {DATABASE_URL}")

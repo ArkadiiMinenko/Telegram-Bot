@@ -3,12 +3,10 @@ from datetime import datetime, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.exc import SQLAlchemyError
-
+from src.db.models import Base, Message
 from src.config.settings import DATABASE_URL, MAX_DB_SIZE_MB
 from src.config.log_config import logger
-from src.db.models import Message
 
-Base = declarative_base()
 
 # Detect DB type
 IS_SQLITE = DATABASE_URL.startswith("sqlite")
