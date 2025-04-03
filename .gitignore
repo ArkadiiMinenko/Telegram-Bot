@@ -1,6 +1,8 @@
 # ENV
 .env
 .env.docker
+!*.example
+
 
 # Data Base
 data/
@@ -35,7 +37,7 @@ wheels/
 *.swp
 *.swo
 
-# Logs
+# logs
 *.log
 
 # Docker
