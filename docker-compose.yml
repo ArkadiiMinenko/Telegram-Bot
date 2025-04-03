@@ -31,6 +31,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    command: ["postgres", "-c", "password_encryption=md5"]
+
 
 volumes:
   pgdata:  # Named volume for persistent Postgres data

@@ -1,5 +1,6 @@
 # ENV
 .env
+.env*
 .env.docker
 !*.example
 
